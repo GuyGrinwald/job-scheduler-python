@@ -4,6 +4,8 @@ Job Scheduler Python
 This is an example Flask web server backed by Postgres and Celery that is able to schedule API calling tasks.
 
 ## Assumptions When Building the App
+1. It's only possible to schedule future tasks i.e. negative `hours`, `minutes`, and `seconds` are not allowed
+2. If a job's scheduled execution time has passed, `get_times` would return 0 instead of a negative number
 
 ## Prerequisits Before Running the Project
 
