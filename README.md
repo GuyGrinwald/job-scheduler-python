@@ -6,6 +6,7 @@ This is an example Flask web server backed by Postgres and Celery that is able t
 ## Assumptions When Building the App
 1. It's only possible to schedule future tasks i.e. negative `hours`, `minutes`, and `seconds` are not allowed
 2. If a job's scheduled execution time has passed, `get_times` would return 0 instead of a negative number
+3. Our API is premissive and casts any non `int` number into an `int` but we don't convert 0.5 hours into 30 minutes
 
 ## Prerequisits Before Running the Project
 
@@ -46,22 +47,26 @@ $ docker build -t job-scheduler-web -f web/Dockerfile .
 $ docker run --name job-scheduler-web -p 127.0.0.1:5000:5000 -d job-scheduler-web
 ```
 4. Run a celery Docker
-```
+```bash
 $
 ```
 5. Run a Postgres Docker
-```
+```bash
 $
 ```
-6. `cd` to project root folder and build the `job-scheduler-worker` image
+6. Run the DB migrations:
+```bash
+$ python manage.py migrate
+```
+7. `cd` to project root folder and build the `job-scheduler-worker` image
 ```bash
 $ docker build -t job-scheduler-worker -f job_scheduler/Dockerfile .
 ```
-7. Run the image
+8. Run the image
 ```bash
 $ docker run --name job-scheduler-worker -d job-scheduler-worker
 ```
-8. You can now access the API via `POST http:localhost:5000/set_timer` or `GET http:localhost:5000:get_times/{task-id}`
+9. You can now access the API via `POST http:localhost:5000/set_timer` or `GET http:localhost:5000:get_times/{task-id}`
 
 ### Running Using K8s
 1. Build the Docker images as instructed in [**Running Using Vanilla Docker**](#Running-Using-Vanilla-Docker)
@@ -70,7 +75,11 @@ $ docker run --name job-scheduler-worker -d job-scheduler-worker
 $ kubectl apply -f k8s/deployment.yaml
 ```
 3. You can now access the API via `POST http:localhost:5000/set_timer` or `GET http:localhost:5000:get_times/{task-id}`
-4. To kill the containers and clean up resources run
+4. Run the DB migrations
+```bash
+$ python manage.py migrate
+```
+5. To kill the containers and clean up resources run
 ```bash
 kubectl delete namespace job-scheduler-namespace
 ```
