@@ -1,0 +1,152 @@
+kind: Namespace
+apiVersion: v1
+metadata:
+  name: job-scheduler-namespace
+  labels:
+    app: job-scheduler
+
+---
+
+kind: PersistentVolume
+apiVersion: v1
+metadata:
+  name: redis-pv
+  namespace: job-scheduler-namespace
+  labels:
+    type: local
+spec:
+  storageClassName: manual
+  capacity:
+    storage: 2Gi
+  accessModes:
+    - ReadWriteOnce
+  hostPath:
+    path: /mnt/redis-pv
+
+---
+
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: redis-pvc
+  namespace: job-scheduler-namespace
+  labels:
+    type: local
+spec:
+  storageClassName: manual
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+  volumeName: redis-pv
+
+---
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: job-scheduler-deployment
+  namespace: job-scheduler-namespace
+  labels:
+    app: job-scheduler
+spec:
+  replicas: 1 # this should be changed for non local environments
+  selector:
+    matchLabels:
+      app: job-scheduler
+  template:
+    metadata:
+      labels:
+        app: job-scheduler
+    spec:
+      containers:
+      - name: celery-wroker
+        image: celery-worker
+        imagePullPolicy: Never # this is so we'll use our local image version
+        resources:
+          requests:
+            cpu: 1
+            memory: "128M"
+          limits:
+            cpu: 1
+            memory: "128M" 
+      - name: celery-broker
+        image: rabbitmq:3-management
+        imagePullPolicy: Always
+        ports:
+          - containerPort: 5672
+          - containerPort: 15672
+      - name: celery-backend
+        image: redis
+        imagePullPolicy: Always
+        command: ["redis-server"]
+        args: ["--save", "60", "1", "--loglevel", "notice"]
+        ports:
+          - containerPort: 6379
+        # volumeMounts:
+        # - name: redis-volume-mount
+        #   mountPath: /data
+      - name: job-scheduler-web
+        image: job-scheduler-web
+        imagePullPolicy: Never 
+        ports:
+          - containerPort: 5000
+        resources:
+          requests:
+            cpu: 1
+            memory: "128M"
+          limits:
+            cpu: 1
+            memory: "128M"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 5000
+          initialDelaySeconds: 3
+          periodSeconds: 3
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 5000
+          initialDelaySeconds: 5
+          periodSeconds: 10
+      # volumes:
+      # - name: redis-volume-mount
+      #   persistentVolumeClaim:
+      #     claimName: redis-pvc
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: job-scheduler-service
+  namespace: job-scheduler-namespace
+  labels:
+    app: job-scheduler
+spec:
+  ports:
+  - port: 5000
+    protocol: TCP
+    targetPort: 5000
+    name: web
+  - port: 5672
+    protocol: TCP
+    targetPort: 5672
+    name: rabbit
+  - port: 15672
+    protocol: TCP
+    targetPort: 15672
+    name: rabbit-web
+  - port: 6379
+    protocol: TCP
+    targetPort: 6379
+    name: redis
+  - port: 5432
+    protocol: TCP
+    targetPort: 5432
+    name: postgres
+  selector:
+    app: job-scheduler
+  type: LoadBalancer

@@ -12,8 +12,8 @@ api = Api(app)
 db = InMemoryJobDB()
 
 api.add_resource(Health, "/health")
-api.add_resource(Scheduler, "/set_timer", resource_class_kwargs={"db": db})
-api.add_resource(Schedule, "/get_times/<int:job_id>", resource_class_kwargs={"db": db})
+api.add_resource(Scheduler, "/timers", resource_class_kwargs={"db": db})
+api.add_resource(Schedule, "/timers/<int:job_id>", resource_class_kwargs={"db": db})
 
 
 if __name__ == "__main__":

@@ -6,6 +6,7 @@ import utils.logging_config  # isort:skip
 
 logger = logging.getLogger(__name__)
 
+
 @staticmethod
 def get_hostname(url: str) -> Optional[str]:
     """
@@ -13,6 +14,7 @@ def get_hostname(url: str) -> Optional[str]:
     """
     result = urlparse(url)
     return result.hostname
+
 
 @staticmethod
 def validate_url(url: str) -> str:
@@ -24,5 +26,5 @@ def validate_url(url: str) -> str:
 
     if not result.scheme or not result.netloc:
         raise ValueError("Illegal URL structure")
-    
+
     return url

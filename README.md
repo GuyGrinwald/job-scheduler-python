@@ -38,48 +38,25 @@ $ nox --session unit_test -f noxfile.py
 
 ### Running Using Vanilla Docker
 1. Make sure you have `Docker` installed
-2. `cd` to project root folder and build the `job-scheduler-web` image
+2. `cd` to the project's root folder
+2. Build the `job-scheduler-web` image
 ```bash
 $ docker build -t job-scheduler-web -f web/Dockerfile .
 ```
-3. Run the image with exposed ports (make sure you're binded to the correct localhost - could also be `0.0.0.0`)
+3. Build the `job-scheduler-worker` image
 ```bash
-$ docker run --name job-scheduler-web -p 127.0.0.1:5000:5000 -d job-scheduler-web
+$ docker build -t celery-worker -f webhook/Dockerfile .
 ```
-4. Run a celery Docker
-```bash
-$
-```
-5. Run a Postgres Docker
-```bash
-$
-```
-6. Run the DB migrations:
-```bash
-$ python manage.py migrate
-```
-7. `cd` to project root folder and build the `job-scheduler-worker` image
-```bash
-$ docker build -t job-scheduler-worker -f job_scheduler/Dockerfile .
-```
-8. Run the image
-```bash
-$ docker run --name job-scheduler-worker -d job-scheduler-worker
-```
-9. You can now access the API via `POST http:localhost:5000/set_timer` or `GET http:localhost:5000:get_times/{task-id}`
-
-### Running Using K8s
-1. Build the Docker images as instructed in [**Running Using Vanilla Docker**](#Running-Using-Vanilla-Docker)
-2. Run the K8s deployment
+4. Run the K8s deployment
 ```bash
 $ kubectl apply -f k8s/deployment.yaml
 ```
-3. You can now access the API via `POST http:localhost:5000/set_timer` or `GET http:localhost:5000:get_times/{task-id}`
-4. Run the DB migrations
+5. Run the DB migrations
 ```bash
 $ python manage.py migrate
 ```
-5. To kill the containers and clean up resources run
+6. You can now access the API via `POST http:localhost:5000/set_timer` or `GET http:localhost:5000:get_times/{task-id}`
+7. To kill the containers and clean up resources run
 ```bash
 kubectl delete namespace job-scheduler-namespace
 ```

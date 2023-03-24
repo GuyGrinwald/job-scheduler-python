@@ -12,7 +12,7 @@ class JobDB:
     __metaclass__ = ABCMeta
 
     @abstractmethod
-    def create(self, hours: int, minutes: int, seconds: int, url: str) -> int:
+    def create(self, hours: int, minutes: int, seconds: int, url: str) -> Job:
         """
         Create a new Job object in the DB and returns its id.
         Hours, minutes, and seconds have to be greater than 0
@@ -26,23 +26,24 @@ class JobDB:
         """
         pass
 
-    class Job:
-        """
-        A data class that represent a row in the DB
-        """
 
-        def __init__(
-            self, id: int, hours: int, minutes: int, seconds: int, url: str
-        ) -> None:
-            self.id = id
-            self.hours = hours
-            self.minutes = minutes
-            self.seconds = seconds
-            self.url = url
-            self.created = datetime.now()
-            self.schedule = self.created + timedelta(
-                hours=hours, minutes=minutes, seconds=seconds
-            )
+class Job:
+    """
+    A data class that represent a row in the DB
+    """
+
+    def __init__(
+        self, id: int, hours: int, minutes: int, seconds: int, url: str
+    ) -> None:
+        self.id = id
+        self.hours = hours
+        self.minutes = minutes
+        self.seconds = seconds
+        self.url = url
+        self.created = datetime.now()
+        self.schedule = self.created + timedelta(
+            hours=hours, minutes=minutes, seconds=seconds
+        )
 
 
 class InMemoryJobDB(JobDB, Singleton):
@@ -55,15 +56,15 @@ class InMemoryJobDB(JobDB, Singleton):
         self.jobs: Dict[int][self.Job] = {}
         self.last_id = 0
 
-    def create(self, hours: int, minutes: int, seconds: int, url: str) -> int:
+    def create(self, hours: int, minutes: int, seconds: int, url: str) -> Job:
         if not all(i >= 0 for i in [hours, minutes, seconds]):
             raise IllegalScheduleError()
 
         self.last_id += 1
-        self.jobs[self.last_id] = self.Job(self.last_id, hours, minutes, seconds, url)
-        return self.last_id
+        self.jobs[self.last_id] = Job(self.last_id, hours, minutes, seconds, url)
+        return self.jobs[self.last_id]
 
-    def get(self, job_id: str) -> None:
+    def get(self, job_id: str) -> Job:
         if job_id not in self.jobs:
             raise JobNotFoundError(job_id)
 
