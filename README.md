@@ -45,22 +45,21 @@ $ nox --session unit_test -f noxfile.py
 ### Running Using Vanilla Docker
 1. Make sure you have `Docker` installed
 2. `cd` to the project's root folder
-2. Build the `job-scheduler-web` image
+2. Build the `job-scheduler-web` image (from project's root)
 ```bash
 $ docker build -t job-scheduler-web -f web/Dockerfile .
 ```
-3. Build the `job-scheduler-worker` image
+3. Build the `job-scheduler-worker` image (from project's root)
 ```bash
 $ docker build -t celery-worker -f webhook/Dockerfile .
 ```
-4. Run the K8s deployment
+4. Run the K8s deployment (from project's root)
 ```bash
 $ kubectl apply -f k8s/deployment.yaml
 ```
-5. Run the DB migrations
+5. Run the DB migrations (from project's root)
 ```bash
-$ export DJANGO_SETTINGS_MODULE=db.settings
-$ export POSTGRES_DB=timer POSTGRES_USER=db_user POSTGRES_PASSWORD=db_password
+$ export DJANGO_SETTINGS_MODULE=settings POSTGRES_DB=timer POSTGRES_USER=db_user POSTGRES_PASSWORD=db_password
 $ python manage.py migrate
 ```
 6. You can now access the API via `POST http:localhost:5000/timers` or `GET http:localhost:5000:timers/{task-id}`

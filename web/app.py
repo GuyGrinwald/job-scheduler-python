@@ -4,12 +4,12 @@ from resources.health import Health
 from resources.schedule import Schedule
 from resources.scheduler import Scheduler
 
-from db.jobs import InMemoryJobDB
+from db.jobs import PersistantDB
 
 app = Flask(__name__)
 api = Api(app)
 
-db = InMemoryJobDB()
+db = PersistantDB()
 
 api.add_resource(Health, "/health")
 api.add_resource(Scheduler, "/timers", resource_class_kwargs={"db": db})

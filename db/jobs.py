@@ -20,7 +20,12 @@ from typing import Dict
 from django.core.exceptions import ObjectDoesNotExist
 from django.forms import ValidationError
 
-from db.exceptions import IllegalJobStatusError, IllegalScheduleError, JobNotFoundError
+from db.exceptions import (
+    DBError,
+    IllegalJobStatusError,
+    IllegalScheduleError,
+    JobNotFoundError,
+)
 from db.timer.models import Job
 from utils.singleton import Singleton
 
@@ -122,16 +127,27 @@ class PersistantDB(JobDB):
         if not all(i >= 0 for i in [hours, minutes, seconds]):
             raise IllegalScheduleError()
 
-        job = Job.objects.create(
-            hours=hours, minutes=minutes, seconds=seconds, url=url, status=0
-        )
+        try:
+            job = Job.objects.create(
+                hours=hours, minutes=minutes, seconds=seconds, url=url, status=0
+            )
+        except Exception as e:
+            logger.exception(
+                f"Unable to create job: hours {hours}, minutes {minutes}, seconds {seconds}, url {url}",
+                e,
+            )
+            raise DBError("Unable to create job")
+
         return job
 
     def get(self, job_id: str) -> Job:
         try:
             return Job.objects.get(id=job_id)
-        except ObjectDoesNotExist as e:
+        except ObjectDoesNotExist:
             raise JobNotFoundError(job_id)
+        except Exception as e:
+            logger.exception(f"Unable get job {job_id}", e)
+            raise DBError(f"Unable to get job {job_id}")
 
     def set_status(self, job_id: str, status) -> None:
         try:
@@ -143,3 +159,6 @@ class PersistantDB(JobDB):
             raise JobNotFoundError(job_id)
         except ValidationError as e:
             raise IllegalJobStatusError(status)
+        except Exception as e:
+            logger.exception(f"Unable to set status {status} to job {job_id}", e)
+            raise DBError(f"Unable to set status {status} to job {job_id}")

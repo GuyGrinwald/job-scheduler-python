@@ -8,6 +8,9 @@ WORKDIR /usr/job_scheduler
 ENV PYTHONDONTWRITEBYTECODE 1
 ENV PYTHONUNBUFFERED 1
 
+# install Postgres executalbes
+RUN apt-get update -y && apt-get install -y gcc libpq-dev python-dev
+
 # install dependencies
 RUN pip install --upgrade pip
 COPY ./requirements.txt /usr/job_scheduler/requirements.txt
@@ -16,6 +19,7 @@ RUN pip install -r requirements.txt
 # copy project
 COPY ./webhook /usr/job_scheduler/webhook
 COPY ./utils /usr/job_scheduler/utils
+COPY ./db /usr/job_scheduler/db
 
 # set pythonpath
 ENV PYTHONPATH "${PYTHONPATH}:/usr/job_scheduler"

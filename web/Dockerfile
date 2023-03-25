@@ -8,6 +8,9 @@ WORKDIR /usr/job_scheduler
 ENV PYTHONDONTWRITEBYTECODE 1
 ENV PYTHONUNBUFFERED 1
 
+# install Postgres executalbes
+RUN apt-get update -y && apt-get install -y gcc libpq-dev python-dev
+
 # install dependencies
 RUN pip install --upgrade pip
 COPY ./requirements.txt /usr/job_scheduler/requirements.txt

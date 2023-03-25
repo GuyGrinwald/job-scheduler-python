@@ -4,6 +4,8 @@ import os
 import requests
 from celery import Celery
 
+from db.exceptions import DBError
+from db.jobs import PersistantDB
 from utils.url_sanitizer import get_base_url
 
 logger = logging.getLogger(__name__)
@@ -18,6 +20,8 @@ app = Celery(
     "worker",
     broker=BROKER_CONNECTION,
 )
+
+db = PersistantDB()
 
 
 @app.task(name="webhook")
@@ -38,8 +42,19 @@ def post_to_url(job_id: int, url: str) -> None:
             timeout=WEBHOOK_TIMEOUT,
         )
         logger.debug(f"Posted to webhook: {webhookurl}")
+        db.set_status(job_id=job_id, status=1)
+        logger.debug(f"Saved job {job_id} status to the DB")
+    except DBError as e:
+        logger.exception(
+            f"Job {job_id} completed successfully but its status was not stored to db",
+            e,
+        )
     except Exception as e:
         logger.exception(f"Failed to post a webhook to {webhookurl}", e)
+        try:
+            db.set_status(job_id=job_id, status=2)
+        except DBError as e:
+            logger.exception(f"Unable to store failure of job {job_id} to the db", e)
         return -1
     return 0
 
