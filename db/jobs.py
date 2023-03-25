@@ -4,7 +4,7 @@ from abc import ABCMeta, abstractmethod
 from datetime import datetime, timedelta
 from typing import Dict
 
-from db.exceptions import IllegalScheduleError, JobNotFoundError
+from db.exceptions import IllegalJobStatusError, IllegalScheduleError, JobNotFoundError
 from utils.singleton import Singleton
 
 
@@ -26,6 +26,11 @@ class JobDB:
         """
         pass
 
+    def set_status(self, job_id: str, status) -> None:
+        """
+        Sets the completion status of a job
+        """
+        pass
 
 class Job:
     """
@@ -44,12 +49,14 @@ class Job:
         self.schedule = self.created + timedelta(
             hours=hours, minutes=minutes, seconds=seconds
         )
-
+        self.status = 0
 
 class InMemoryJobDB(JobDB, Singleton):
     """
     An In-Memory implementation of the JobDB
     """
+
+    ALLOWED_JOB_STATUS = {0, 1, 2}
 
     def __init__(self):
         super().__init__()
@@ -69,3 +76,12 @@ class InMemoryJobDB(JobDB, Singleton):
             raise JobNotFoundError(job_id)
 
         return self.jobs[job_id]
+
+    def set_status(self, job_id: str, status) -> None:
+        if job_id not in self.jobs:
+            raise JobNotFoundError(job_id)
+        
+        if status not in self.ALLOWED_JOB_STATUS:
+            raise IllegalJobStatusError(status)
+
+        self.jobs[job_id].status = status
