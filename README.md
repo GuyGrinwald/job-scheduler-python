@@ -3,13 +3,18 @@ Job Scheduler Python
 
 This is an example Flask web server backed by Postgres and Celery that is able to schedule API calling tasks.
 
+## High Level Design
+
+![localImage](./docs/architecture.png)
+
 ## Assumptions When Building the App
 1. It's only possible to schedule future tasks i.e. negative `hours`, `minutes`, and `seconds` are not allowed
 2. If a job's scheduled execution time has passed, `get_times` would return 0 instead of a negative number
 3. Our API is premissive and casts any non `int` number into an `int` but we don't convert 0.5 hours into 30 minutes
 4. Since it was not specified explicitly and the example did cover this, I assumed that we append the counter id after 
 the path of the URL (and not just the hostname) and we drop other params as they may be inapplicable in that path
-5. URL is a mandatory paramter and we impose strict validation on it (requireing scheme and netloc)
+5. URL is a mandatory paramter and we impose strict validation on it (requireing scheme and netloc). We also only permit up to 200
+characters but this can be changed easily
 6. Our API only allows for forward scheduling information i.e. non negative hours, minutes, seconds
 7. in `worker.py` I preferd the application to fail if WEBHOOK_TIMEOUT isn't a number since this would make development
 and bug triage easier. I also didn't cap this value as this is a developer's configuration and I leave this to their discretion
@@ -17,9 +22,13 @@ and bug triage easier. I also didn't cap this value as this is a developer's con
 ## Prerequisits Before Running the Project
 
 1. If not already present, install Python 3.11 and [virtualeenvwrapper](https://pypi.org/project/virtualenvwrapper/)
-2. Create a local virtualenv
-```
+2. Create and activate a local virtualenv
+```bash
 $ mkvirtualenv {your-env-name}
+```
+3. Add the root of the project to your `PYTHONPATH`
+```bash
+$ export PYTHONPATH={path-to-root-folder}
 ```
 3. Install project dependencies using
 ```bash
@@ -32,6 +41,7 @@ $ pip install -r requirements.txt
 
 ### Executing Tests
 
+#### Unit Tests
 We use [nox](https://nox.thea.codes/en/stable/tutorial.html#running-nox-for-the-first-time) as our testing framework. To run the tests do the following:
 1. Install `nox` (comes in the project's `requirements.txt`)
 ```bash
@@ -69,3 +79,17 @@ kubectl delete namespace job-scheduler-namespace
 ```
 
 ## Feature Backlog
+Given the limited time and scope of the project there are many things I would have wanted to add.
+I've listed below the main highlights.
+
+1. Secure credentials for Postgres, RabbitMQ etc.
+2. Adding User management, API tokens, rate limiting and quota etc.
+3. Adding monitoring, metrics (e.g. failed webhooks, user usage metrics, worker liveliness, API liveliness etc.)
+4. Adding tracability from API to Celery workers using GUIDs
+5. For production scalability we need to deploy auto-sccaling groups for API, Celery, and potentially shard the DB
+6. We should also consider moving Celery to be based on SQS or other high-scale platform
+7. For ease of development I would add CI and build options so the process isn't so manual
+8. I would add many more E2E tests, negative tests, and load tests
+9. As with most systems, we would need more documentation 
+
+There are many other features we can think of, but this is of the top of my head ;)
