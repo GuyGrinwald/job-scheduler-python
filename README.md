@@ -18,6 +18,8 @@ characters but this can be changed easily
 6. Our API only allows for forward scheduling information i.e. non negative hours, minutes, seconds
 7. in `worker.py` I preferd the application to fail if WEBHOOK_TIMEOUT isn't a number since this would make development
 and bug triage easier. I also didn't cap this value as this is a developer's configuration and I leave this to their discretion
+8. Celery's `eta` feature isn't extermely accurate and can result in some lags in execution. This can be handled by tinckering with
+some configurations e.g. `worker_timer_precision`
 
 ## Prerequisits Before Running the Project
 
@@ -88,8 +90,9 @@ I've listed below the main highlights.
 4. Adding tracability from API to Celery workers using GUIDs
 5. For production scalability we need to deploy auto-sccaling groups for API, Celery, and potentially shard the DB
 6. We should also consider moving Celery to be based on SQS or other high-scale platform
-7. For ease of development I would add CI and build options so the process isn't so manual
-8. I would add many more E2E tests, negative tests, and load tests
-9. As with most systems, we would need more documentation 
+7. There's additional logic we can add to make the Celery workers more robust and handle connection issues etc.
+8. For ease of development I would add CI and build options so the process isn't so manual
+9. I would add many more E2E tests, negative tests, and load tests
+10. As with most systems, we would need more documentation 
 
 There are many other features we can think of, but this is of the top of my head ;)
