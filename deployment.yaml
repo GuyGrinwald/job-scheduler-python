@@ -7,41 +7,41 @@ metadata:
 
 ---
 
-kind: PersistentVolume
-apiVersion: v1
-metadata:
-  name: redis-pv
-  namespace: job-scheduler-namespace
-  labels:
-    type: local
-spec:
-  storageClassName: manual
-  capacity:
-    storage: 2Gi
-  accessModes:
-    - ReadWriteOnce
-  hostPath:
-    path: /mnt/redis-pv
+# kind: PersistentVolume
+# apiVersion: v1
+# metadata:
+#   name: redis-pv
+#   namespace: job-scheduler-namespace
+#   labels:
+#     type: local
+# spec:
+#   storageClassName: manual
+#   capacity:
+#     storage: 512M
+#   accessModes:
+#     - ReadWriteOnce
+#   hostPath:
+#     path: /mnt/redis-pv
 
----
+# ---
 
-kind: PersistentVolumeClaim
-apiVersion: v1
-metadata:
-  name: redis-pvc
-  namespace: job-scheduler-namespace
-  labels:
-    type: local
-spec:
-  storageClassName: manual
-  accessModes:
-    - ReadWriteOnce
-  resources:
-    requests:
-      storage: 1Gi
-  volumeName: redis-pv
+# kind: PersistentVolumeClaim
+# apiVersion: v1
+# metadata:
+#   name: redis-pvc
+#   namespace: job-scheduler-namespace
+#   labels:
+#     type: local
+# spec:
+#   storageClassName: manual
+#   accessModes:
+#     - ReadWriteOnce
+#   resources:
+#     requests:
+#       storage: 512M
+#   volumeName: redis-pv
 
----
+# ---
 
 apiVersion: apps/v1
 kind: Deployment
@@ -67,10 +67,19 @@ spec:
         resources:
           requests:
             cpu: 1
-            memory: "128M"
+            memory: "256M"
           limits:
             cpu: 1
-            memory: "128M" 
+            memory: "256M" 
+        env:
+          - name: ALLOW_REDIRECTS
+            value: "False"
+          - name: WEBHOOK_TIMEOUT
+            value: "3"
+          - name: BROKER_CONNECTION
+            value: "pyamqp://guest@localhost:5672"
+          - name: BACKEND_CONNECTION
+            value: "redis://localhost:6379/0"
       - name: celery-broker
         image: rabbitmq:3-management
         imagePullPolicy: Always
@@ -92,13 +101,20 @@ spec:
         imagePullPolicy: Never 
         ports:
           - containerPort: 5000
+        env:
+        - name: APP_DOMAIN
+          value: "localhost"
+        - name: BROKER_CONNECTION
+          value: "pyamqp://guest@localhost:5672"
+        - name: BACKEND_CONNECTION
+          value: "redis://localhost:6379/0"
         resources:
           requests:
             cpu: 1
-            memory: "128M"
+            memory: "256M"
           limits:
             cpu: 1
-            memory: "128M"
+            memory: "256M"
         livenessProbe:
           httpGet:
             path: /health

@@ -20,4 +20,4 @@ COPY ./utils /usr/job_scheduler/utils
 # set pythonpath
 ENV PYTHONPATH "${PYTHONPATH}:/usr/job_scheduler"
 
-ENTRYPOINT celery -A webhook.worker worker --autoscale 1 --loglevel info
+ENTRYPOINT celery -A webhook.worker worker --autoscale 1 --loglevel debug

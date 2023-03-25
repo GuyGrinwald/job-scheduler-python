@@ -17,9 +17,18 @@ def get_hostname(url: str) -> Optional[str]:
 
 
 @staticmethod
+def get_base_url(url: str) -> str:
+    """
+    Removes any <params>, <query_params>, or <fragment> from the given URL
+    """
+    result = urlparse(url)
+    return f"{result.scheme}://{result.hostname}{result.path}"  # path, if exists, starts with '/'
+
+
+@staticmethod
 def validate_url(url: str) -> str:
     """
-    Validates that the given url is in the form of "http[s]://domain.[domains]+.TLD
+    Validates that the given url is in the form of <scheme>://<netloc>/<path>?
     """
     logger.debug(f"Validating url: {url}")
     result = urlparse(url)

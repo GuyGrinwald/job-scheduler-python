@@ -7,6 +7,12 @@ This is an example Flask web server backed by Postgres and Celery that is able t
 1. It's only possible to schedule future tasks i.e. negative `hours`, `minutes`, and `seconds` are not allowed
 2. If a job's scheduled execution time has passed, `get_times` would return 0 instead of a negative number
 3. Our API is premissive and casts any non `int` number into an `int` but we don't convert 0.5 hours into 30 minutes
+4. Since it was not specified explicitly and the example did cover this, I assumed that we append the counter id after 
+the path of the URL (and not just the hostname) and we drop other params as they may be inapplicable in that path
+5. URL is a mandatory paramter and we impose strict validation on it (requireing scheme and netloc)
+6. Our API only allows for forward scheduling information i.e. non negative hours, minutes, seconds
+7. in `worker.py` I preferd the application to fail if WEBHOOK_TIMEOUT isn't a number since this would make development
+and bug triage easier. I also didn't cap this value as this is a developer's configuration and I leave this to their discretion
 
 ## Prerequisits Before Running the Project
 

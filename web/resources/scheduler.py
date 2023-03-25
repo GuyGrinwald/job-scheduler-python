@@ -15,6 +15,8 @@ logger = logging.getLogger(__name__)
 
 APP_DOMAIN = os.environ.get("APP_DOMAIN", "localhost")
 ILLEGAL_DOMAINS = ["localhost", "127.0.0.1", "0.0.0.0"]
+BROKER_CONNECTION = os.environ.get("BROKER_CONNECTION", "pyamqp://guest@localhost:5672")
+BACKEND_CONNECTION = os.environ.get("BACKEND_CONNECTION", "redis://localhost:6379/0")
 
 
 class Scheduler(Resource):
@@ -26,8 +28,8 @@ class Scheduler(Resource):
         self.db: JobDB = kwargs["db"]
         self.app = Celery(
             "worker",
-            broker="pyamqp://guest@localhost:5672",
-            backend="redis://localhost:6379/0",
+            broker=BROKER_CONNECTION,
+            backend=BACKEND_CONNECTION,
         )
         super().__init__()
 
@@ -37,7 +39,7 @@ class Scheduler(Resource):
 
         try:
             job: Job = self.db.create(hours, minutes, seconds, url)
-            self.app.send_task(name="webhook", args=(job.id, url))
+            self.app.send_task(name="webhook", kwargs={"job_id": job.id, "url": url})
             return {"id": job.id}
         except db_excpetions.IllegalScheduleError as e:
             abort(IILEAGAL_SCHEDULE_ERROR, description=str(e))
@@ -47,23 +49,49 @@ class Scheduler(Resource):
         Sanitizes and validates the request parameters to match the API docs
         """
         # Handle scheduling data
+        hours_param = schedule_params.get("hours", 0)
+        minutes_param = schedule_params.get("minutes", 0)
+        seconds_param = schedule_params.get("seconds", 0)
+        hours, minutes, seconds = self._validate_schedule_param(
+            hours_param, minutes_param, seconds_param
+        )
+
+        # Handle URL
+        url = schedule_params.get("url", None)
+        self._validate_url_param(url)
+        return hours, minutes, seconds, url
+
+    def _validate_schedule_param(
+        self, hours_param: object, minutes_param: object, seconds_param: object
+    ):
+        """
+        Validates that the given scheduling information is a non negative number (and casts it to int)
+        """
+        # Check all input can be cast to int
         try:
-            hours = int(schedule_params.get("hours", 0))
-            minutes = int(schedule_params.get("minutes", 0))
-            seconds = int(schedule_params.get("seconds", 0))
+            hours = int(hours_param)
+            minutes = int(minutes_param)
+            seconds = int(seconds_param)
         except ValueError:
             logger.warning(
-                f"Recieved scheduling information: hours: {hours}, minutes: {minutes}, seconds: {seconds}"
+                f"Recieved non numeric scheduling information: hours: {hours}, minutes: {minutes}, seconds: {seconds}"
             )
             abort(
                 IILEAGAL_SCHEDULE_ERROR,
                 description="Hours, minutes, and seconds must all be non negative integers",
             )
 
-        # Handle URL
-        url = schedule_params.get("url", None)
-        self._validate_url_param(url)
-        return hours, minutes, seconds, url
+        # Check all input is non negative
+        if any([param < 0 for param in [hours, minutes, seconds]]):
+            logger.warning(
+                f"Recieved negative scheduling information: hours: {hours}, minutes: {minutes}, seconds: {seconds}"
+            )
+            abort(
+                IILEAGAL_SCHEDULE_ERROR,
+                description="Hours, minutes, and seconds must all be non negative integers",
+            )
+
+        return hours, minutes, seconds
 
     def _validate_url_param(self, url: str) -> None:
         """
