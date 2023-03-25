@@ -86,13 +86,6 @@ spec:
         ports:
           - containerPort: 5672
           - containerPort: 15672
-      - name: celery-backend
-        image: redis
-        imagePullPolicy: Always
-        command: ["redis-server"]
-        args: ["--save", "60", "1", "--loglevel", "notice"]
-        ports:
-          - containerPort: 6379
         # volumeMounts:
         # - name: redis-volume-mount
         #   mountPath: /data

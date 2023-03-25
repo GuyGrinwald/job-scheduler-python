@@ -16,7 +16,6 @@ logger = logging.getLogger(__name__)
 APP_DOMAIN = os.environ.get("APP_DOMAIN", "localhost")
 ILLEGAL_DOMAINS = ["localhost", "127.0.0.1", "0.0.0.0"]
 BROKER_CONNECTION = os.environ.get("BROKER_CONNECTION", "pyamqp://guest@localhost:5672")
-BACKEND_CONNECTION = os.environ.get("BACKEND_CONNECTION", "redis://localhost:6379/0")
 
 
 class Scheduler(Resource):
@@ -29,7 +28,6 @@ class Scheduler(Resource):
         self.app = Celery(
             "worker",
             broker=BROKER_CONNECTION,
-            backend=BACKEND_CONNECTION,
         )
         super().__init__()
 
@@ -38,7 +36,10 @@ class Scheduler(Resource):
         hours, minutes, seconds, url = self.sanitize_request(json_data)
 
         try:
+            logger.info(f"Recived new scheduling job")
+            logger.debug("Storing Job in db")
             job: Job = self.db.create(hours, minutes, seconds, url)
+            logger.debug("Sending task to Celery workers")
             self.app.send_task(name="webhook", kwargs={"job_id": job.id, "url": url})
             return {"id": job.id}
         except db_excpetions.IllegalScheduleError as e:
@@ -52,12 +53,14 @@ class Scheduler(Resource):
         hours_param = schedule_params.get("hours", 0)
         minutes_param = schedule_params.get("minutes", 0)
         seconds_param = schedule_params.get("seconds", 0)
+        logger.debug("Validating scheduling params")
         hours, minutes, seconds = self._validate_schedule_param(
             hours_param, minutes_param, seconds_param
         )
 
         # Handle URL
         url = schedule_params.get("url", None)
+        logger.debug("Validating url params")
         self._validate_url_param(url)
         return hours, minutes, seconds, url
 

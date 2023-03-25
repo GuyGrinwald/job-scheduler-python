@@ -13,12 +13,10 @@ ALLOW_REDIRECTS = True if ALLOW_REDIRECTS in {"True", "true"} else False
 
 WEBHOOK_TIMEOUT = int(os.environ.get("WEBHOOK_TIMEOUT", 3))
 BROKER_CONNECTION = os.environ.get("BROKER_CONNECTION", "pyamqp://guest@localhost:5672")
-BACKEND_CONNECTION = os.environ.get("BACKEND_CONNECTION", "redis://localhost:6379/0")
 
 app = Celery(
     "worker",
     broker=BROKER_CONNECTION,
-    backend=BACKEND_CONNECTION,
 )
 
 
@@ -27,6 +25,8 @@ def post_to_url(job_id: int, url: str) -> None:
     """
     Calls the given URL with an added param of the job_id
     """
+    logger.info(f"Recieved webhook task {job_id}")
+
     webhookurl = _build_webhook_url(job_id, url)
     logger.debug(f"Executing webhook call to {webhookurl}")
 

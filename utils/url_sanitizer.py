@@ -30,7 +30,6 @@ def validate_url(url: str) -> str:
     """
     Validates that the given url is in the form of <scheme>://<netloc>/<path>?
     """
-    logger.debug(f"Validating url: {url}")
     result = urlparse(url)
 
     if not result.scheme or not result.netloc:
