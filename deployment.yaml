@@ -7,41 +7,53 @@ metadata:
 
 ---
 
-# kind: PersistentVolume
-# apiVersion: v1
-# metadata:
-#   name: redis-pv
-#   namespace: job-scheduler-namespace
-#   labels:
-#     type: local
-# spec:
-#   storageClassName: manual
-#   capacity:
-#     storage: 512M
-#   accessModes:
-#     - ReadWriteOnce
-#   hostPath:
-#     path: /mnt/redis-pv
+kind: PersistentVolume
+apiVersion: v1
+metadata:
+  name: db-pv
+  namespace: job-scheduler-namespace
+  labels:
+    type: local
+spec:
+  storageClassName: manual
+  capacity:
+    storage: 1Gi
+  accessModes:
+    - ReadWriteOnce
+  hostPath:
+    path: /data/db-pv
 
-# ---
+---
 
-# kind: PersistentVolumeClaim
-# apiVersion: v1
-# metadata:
-#   name: redis-pvc
-#   namespace: job-scheduler-namespace
-#   labels:
-#     type: local
-# spec:
-#   storageClassName: manual
-#   accessModes:
-#     - ReadWriteOnce
-#   resources:
-#     requests:
-#       storage: 512M
-#   volumeName: redis-pv
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: db-pvc
+  namespace: job-scheduler-namespace
+  labels:
+    type: local
+spec:
+  storageClassName: manual
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 512M
+  volumeName: db-pv
 
-# ---
+---
+
+apiVersion: v1
+kind: Secret
+metadata:
+  name: db-credentials
+  namespace: job-scheduler-namespace
+type: Opaque
+stringData:
+  user: db_user
+  password: db_password
+
+---
 
 apiVersion: apps/v1
 kind: Deployment
@@ -80,15 +92,24 @@ spec:
             value: "pyamqp://guest@localhost:5672"
           - name: BACKEND_CONNECTION
             value: "redis://localhost:6379/0"
+          - name: POSTGRES_USER
+            valueFrom:
+              secretKeyRef:
+                name: db-credentials
+                key: user
+          - name: POSTGRES_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: db-credentials
+                key: password
+          - name: POSTGRES_DB
+            value: timer
       - name: celery-broker
         image: rabbitmq:3-management
         imagePullPolicy: Always
         ports:
           - containerPort: 5672
           - containerPort: 15672
-        # volumeMounts:
-        # - name: redis-volume-mount
-        #   mountPath: /data
       - name: job-scheduler-web
         image: job-scheduler-web
         imagePullPolicy: Never 
@@ -101,6 +122,18 @@ spec:
           value: "pyamqp://guest@localhost:5672"
         - name: BACKEND_CONNECTION
           value: "redis://localhost:6379/0"
+        - name: POSTGRES_USER
+          valueFrom:
+            secretKeyRef:
+              name: db-credentials
+              key: user
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: db-credentials
+              key: password
+        - name: POSTGRES_DB
+          value: timer
         resources:
           requests:
             cpu: 1
@@ -120,10 +153,30 @@ spec:
             port: 5000
           initialDelaySeconds: 5
           periodSeconds: 10
-      # volumes:
-      # - name: redis-volume-mount
-      #   persistentVolumeClaim:
-      #     claimName: redis-pvc
+      - name: db
+        image: postgres:15
+        env:
+        - name: POSTGRES_USER
+          valueFrom:
+            secretKeyRef:
+              name: db-credentials
+              key: user
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: db-credentials
+              key: password
+        - name: POSTGRES_DB
+          value: timer
+        ports:
+        - containerPort: 5432
+        volumeMounts:
+        - name: db-volume-mount
+          mountPath: /var/lib/postgresql/data
+      volumes:
+      - name: db-volume-mount
+        persistentVolumeClaim:
+          claimName: db-pvc
 
 ---
 
@@ -148,10 +201,6 @@ spec:
     protocol: TCP
     targetPort: 15672
     name: rabbit-web
-  - port: 6379
-    protocol: TCP
-    targetPort: 6379
-    name: redis
   - port: 5432
     protocol: TCP
     targetPort: 5432

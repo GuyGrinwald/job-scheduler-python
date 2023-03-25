@@ -59,9 +59,11 @@ $ kubectl apply -f k8s/deployment.yaml
 ```
 5. Run the DB migrations
 ```bash
+$ export DJANGO_SETTINGS_MODULE=db.settings
+$ export POSTGRES_DB=timer POSTGRES_USER=db_user POSTGRES_PASSWORD=db_password
 $ python manage.py migrate
 ```
-6. You can now access the API via `POST http:localhost:5000/set_timer` or `GET http:localhost:5000:get_times/{task-id}`
+6. You can now access the API via `POST http:localhost:5000/timers` or `GET http:localhost:5000:timers/{task-id}`
 7. To kill the containers and clean up resources run
 ```bash
 kubectl delete namespace job-scheduler-namespace

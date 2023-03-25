@@ -21,4 +21,6 @@ class JobNotFoundError(DBError):
 class IllegalJobStatusError(DBError):
     def __init__(self, job_status: int) -> None:
         self.job_status = job_status
-        super().__init__(message=f"Job status {job_status} is not allowed. Must be one of [0, 1, 2].")
+        super().__init__(
+            message=f"Job status {job_status} is not allowed. Must be one of [0, 1, 2]."
+        )
