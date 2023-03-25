@@ -40,7 +40,8 @@ class Scheduler(Resource):
             logger.debug("Storing Job in db")
             job: Job = self.db.create(hours, minutes, seconds, url)
             logger.debug("Sending task to Celery workers")
-            self.app.send_task(name="webhook", kwargs={"job_id": job.id, "url": url})
+            logger.debug(f"Task is scheduled for {job.schedule.astimezone()}")
+            self.app.send_task(name="webhook", kwargs={"job_id": job.id, "url": url}, eta=job.schedule.astimezone())
             return {"id": job.id}
         except db_excpetions.IllegalScheduleError as e:
             abort(IILEAGAL_SCHEDULE_ERROR, description=str(e))
