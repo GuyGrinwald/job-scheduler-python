@@ -13,3 +13,9 @@ def lint(session):
 def unit_test(session):
     session.install("-r", "requirements.txt")
     session.run("coverage", "run", "-m", "pytest")
+
+
+@nox.session
+def e2e_test(session):
+    session.install("-r", "requirements.txt")
+    session.run("coverage", "run", "-m", "pytest", "-v", "./tests/e2e")
