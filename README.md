@@ -8,17 +8,18 @@ This is an example Flask web server backed by Postgres and Celery that is able t
 ![localImage](./docs/architecture.png)
 
 ## Assumptions When Building the App
-1. It's only possible to schedule future tasks i.e. negative `hours`, `minutes`, and `seconds` are not allowed
-2. URL is a mandatory paramter and we impose strict validation on it (requireing scheme and netloc). We also only permit up to 200
+1. The API accepts JSON formatted payloads for POST requests
+2. It's only possible to schedule future tasks i.e. negative `hours`, `minutes`, and `seconds` are not allowed
+3. URL is a mandatory paramter and we impose strict validation on it (requireing scheme and netloc). We also only permit up to 200
 characters but this can be changed easily
-3. Our API is premissive and casts any non `int` number into an `int` but we don't convert 0.5 hours into 30 minutes
-4. Since it was not specified explicitly and the example did cover this, I assumed that we append the counter id after 
+4. Our API is premissive and casts any non `int` number into an `int` but we don't convert 0.5 hours into 30 minutes
+5. Since it was not specified explicitly and the example did cover this, I assumed that we append the counter id after 
 the path of the URL (and not just the hostname) and we drop other params as they may be inapplicable in that path
-5. in `worker.py` I preferd the application to fail if WEBHOOK_TIMEOUT isn't a number since this would make development
+6. in `worker.py` I preferd the application to fail if WEBHOOK_TIMEOUT isn't a number since this would make development
 and bug triage easier. I also didn't cap this value as this is a developer's configuration and I leave this to their discretion
-6. Celery's `eta` feature isn't extermely accurate and can result in some lags in execution. This can be mitigated by tinckering with
+7. Celery's `eta` feature isn't extermely accurate and can result in some lags in execution. This can be mitigated by tinckering with
 some configurations e.g. `worker_timer_precision`
-7. I've hard-coded many scalabilty features e.g. Gunicorn's workers and theads, Celery's workers and process and the deployment's replicas. These can be adjusted per our need, or better yet, add auto-scaling
+8. I've hard-coded many scalabilty features e.g. Gunicorn's workers and theads, Celery's workers and process and the deployment's replicas. These can be adjusted per our need, or better yet, add auto-scaling
 
 ## Prerequisits Before Running the Project
 
@@ -79,9 +80,9 @@ $ kubectl apply -f k8s/deployment.yaml
 5. Run the DB migrations (from project's root)
 ```bash
 $ export DJANGO_SETTINGS_MODULE=settings POSTGRES_DB=timer POSTGRES_USER=db_user POSTGRES_PASSWORD=db_password
-$ python manage.py migrate
+$ python db/manage.py migrate
 ```
-6. You can now access the API via `POST http:localhost:5000/timers` or `GET http:localhost:5000:timers/{task-id}`
+6. You can now access the API via `POST http://localhost:5000/timers` or `GET http://localhost:5000:timers/{task-id}`
 7. To kill the containers and clean up resources run
 ```bash
 kubectl kubectl config set-context --current --namespace=job-scheduler-namespace
@@ -106,3 +107,24 @@ I've listed below the main highlights.
 11. As with most systems, we would need more documentation 
 
 There are many other features we can think of, but this is of the top of my head ;)
+
+## Troubleshooting
+The application was tested on Mac and Windows but things could happen. I tried my best to account for the various
+statuses of the testing environment but I wasn't able to account for everything.
+
+### Unable to Run Django Migrations
+1. Make sure `DJANGO_SETTINGS_MODULE` is exported and that the `PYTHONPATH` is set to your project's root dir
+2. Make sure your virtualenv is enabled
+3. Make sure the Postgres container is not resuing an old DB file. This can be seen the logs
+
+### Dockers Not Booting Up
+1. K8s deployment can take a few minutes so patience is a virtue.
+2. Check the deployment status by running the following commands. There's usually a hint there.
+```bash
+$ kubectl get deployment job-scheduler-deployment
+$ kubeclt describe deployemnt {name-of-deployemnt}
+```
+
+### API Isn't Responding or Returning Errors
+1. Check you are sending JSON requests
+2. Check you are calling the right URL. Some systems are ok with Localhost, and some require `127.0.0.1` etc.
