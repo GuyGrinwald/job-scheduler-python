@@ -33,7 +33,7 @@ class Scheduler(Resource):
 
     def post(self):
         json_data = request.get_json(force=True)
-        hours, minutes, seconds, url = self.sanitize_request(json_data)
+        hours, minutes, seconds, url = self._sanitize_request(json_data)
 
         try:
             logger.info(f"Recived new scheduling job")
@@ -50,7 +50,7 @@ class Scheduler(Resource):
         except db_excpetions.IllegalScheduleError as e:
             abort(IILEAGAL_SCHEDULE_ERROR, description=str(e))
 
-    def sanitize_request(self, schedule_params: Dict):
+    def _sanitize_request(self, schedule_params: Dict):
         """
         Sanitizes and validates the request parameters to match the API docs
         """

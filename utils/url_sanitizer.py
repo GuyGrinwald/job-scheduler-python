@@ -26,13 +26,11 @@ def get_base_url(url: str) -> str:
 
 
 @staticmethod
-def validate_url(url: str) -> str:
+def validate_url(url: str) -> None:
     """
-    Validates that the given url is in the form of <scheme>://<netloc>/<path>?
+    Validates that the given url is in the form of <scheme>://<netloc>/<path>, with <path> being optional
     """
     result = urlparse(url)
 
     if not result.scheme or not result.netloc:
         raise ValueError("Illegal URL structure")
-
-    return url

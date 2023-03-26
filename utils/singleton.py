@@ -10,7 +10,7 @@ class Singleton(object):
 
     def __new__(cls, *args, **kwargs):
         if not isinstance(cls._instance, cls):
-            cls._instance = object.__new__(cls, *args, **kwargs)
+            cls._instance = object.__new__(cls)
             cls._instance._initialized = False
         elif cls.__init__ is not _nop_init:
             cls.__init__ = _nop_init

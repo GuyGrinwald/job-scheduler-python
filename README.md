@@ -52,7 +52,7 @@ $ pip install nox
 2. Run `nox` a nox session e.g. `unit_test`. `nox` will then execute all tests in the given session. From the project's root 
 directory run the following command
 ```bash
-$ nox --session unit_test -f noxfile.py
+$ nox -r --session unit_test -f noxfile.py
 ```
 
 ### Running Using K8s
