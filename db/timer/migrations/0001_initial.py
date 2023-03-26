@@ -45,7 +45,8 @@ class Migration(migrations.Migration):
                 (
                     "status",
                     models.IntegerField(
-                        choices=[(0, "Pending"), (1, "Success"), (2, "Failed")]
+                        choices=[(0, "Pending"), (1, "Success"), (2, "Failed")],
+                        default=0,
                     ),
                 ),
             ],

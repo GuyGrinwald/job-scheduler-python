@@ -1,7 +1,7 @@
 Job Scheduler Python
 ========================
 
-This is an example Flask web server backed by Postgres and Celery that is able to schedule API calling tasks.
+This is an example Flask web server backed by Postgres and Celery that is able to schedule tasks.
 
 ## High Level Design
 
@@ -9,17 +9,17 @@ This is an example Flask web server backed by Postgres and Celery that is able t
 
 ## Assumptions When Building the App
 1. It's only possible to schedule future tasks i.e. negative `hours`, `minutes`, and `seconds` are not allowed
-2. If a job's scheduled execution time has passed, `get_times` would return 0 instead of a negative number
+2. URL is a mandatory paramter and we impose strict validation on it (requireing scheme and netloc). We also only permit up to 200
+characters but this can be changed easily
 3. Our API is premissive and casts any non `int` number into an `int` but we don't convert 0.5 hours into 30 minutes
 4. Since it was not specified explicitly and the example did cover this, I assumed that we append the counter id after 
 the path of the URL (and not just the hostname) and we drop other params as they may be inapplicable in that path
-5. URL is a mandatory paramter and we impose strict validation on it (requireing scheme and netloc). We also only permit up to 200
-characters but this can be changed easily
-6. Our API only allows for forward scheduling information i.e. non negative hours, minutes, seconds
-7. in `worker.py` I preferd the application to fail if WEBHOOK_TIMEOUT isn't a number since this would make development
+5. If a job's scheduled execution time has passed, `get_times` should return 0 instead of a negative number
+6. in `worker.py` I preferd the application to fail if WEBHOOK_TIMEOUT isn't a number since this would make development
 and bug triage easier. I also didn't cap this value as this is a developer's configuration and I leave this to their discretion
-8. Celery's `eta` feature isn't extermely accurate and can result in some lags in execution. This can be handled by tinckering with
+7. Celery's `eta` feature isn't extermely accurate and can result in some lags in execution. This can be mitigated by tinckering with
 some configurations e.g. `worker_timer_precision`
+8. I've hard-coded many scalabilty features e.g. Gunicorn's workers and theads, Celery's workers and process and the deployment's replicas. These can be adjusted per our need, or better yet, add auto-scaling
 
 ## Prerequisits Before Running the Project
 
@@ -49,14 +49,14 @@ We use [nox](https://nox.thea.codes/en/stable/tutorial.html#running-nox-for-the-
 ```bash
 $ pip install nox
 ```
-2. Run `nox` a nox session e.g. `unit_test`. `nox` will then execute all tests in the given session.
+2. Run `nox` a nox session e.g. `unit_test`. `nox` will then execute all tests in the given session. From the project's root 
+directory run the following command
 ```bash
 $ nox --session unit_test -f noxfile.py
 ```
 
-### Running Using Vanilla Docker
-1. Make sure you have `Docker` installed
-2. `cd` to the project's root folder
+### Running Using K8s
+1. `cd` to the project's root folder
 2. Build the `job-scheduler-web` image (from project's root)
 ```bash
 $ docker build -t job-scheduler-web -f web/Dockerfile .
@@ -77,7 +77,9 @@ $ python manage.py migrate
 6. You can now access the API via `POST http:localhost:5000/timers` or `GET http:localhost:5000:timers/{task-id}`
 7. To kill the containers and clean up resources run
 ```bash
+kubectl kubectl config set-context --current --namespace=job-scheduler-namespace
 kubectl delete namespace job-scheduler-namespace
+kubectl delete pv job-scheduler-pv
 ```
 
 ## Feature Backlog
@@ -88,11 +90,12 @@ I've listed below the main highlights.
 2. Adding User management, API tokens, rate limiting and quota etc.
 3. Adding monitoring, metrics (e.g. failed webhooks, user usage metrics, worker liveliness, API liveliness etc.)
 4. Adding tracability from API to Celery workers using GUIDs
-5. For production scalability we need to deploy auto-sccaling groups for API, Celery, and potentially shard the DB
-6. We should also consider moving Celery to be based on SQS or other high-scale platform
+5. For production scalability we need to deploy auto-scaling groups for API, Celery, and potentially shard the DB
+6. We should also consider moving Celery's broker to be based on SQS or other high-scale platform
 7. There's additional logic we can add to make the Celery workers more robust and handle connection issues etc.
 8. For ease of development I would add CI and build options so the process isn't so manual
 9. I would add many more E2E tests, negative tests, and load tests
-10. As with most systems, we would need more documentation 
+10. Much of the application's configs are somewhat hard-coded (e.g. log level etc.). They should be moved to K8s ConfigMaps
+11. As with most systems, we would need more documentation 
 
 There are many other features we can think of, but this is of the top of my head ;)

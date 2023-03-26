@@ -20,7 +20,7 @@ class Job(models.Model):
     seconds = models.IntegerField(validators=[MinValueValidator(0)])
     url = models.URLField(max_length=200)
     created = models.DateTimeField(auto_now_add=True)
-    status = models.IntegerField(choices=JOB_STATUS)
+    status = models.IntegerField(choices=JOB_STATUS, default=0)
 
     @property
     def schedule(self):

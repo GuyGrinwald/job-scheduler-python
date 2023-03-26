@@ -44,7 +44,7 @@ class JobDB:
     @abstractmethod
     def get(self, job_id: str) -> Job:
         """
-        Retrieve a job object based on it's id
+        Retrieve a job object based on its id
         """
         pass
 
@@ -129,7 +129,7 @@ class PersistantDB(JobDB):
 
         try:
             job = Job.objects.create(
-                hours=hours, minutes=minutes, seconds=seconds, url=url, status=0
+                hours=hours, minutes=minutes, seconds=seconds, url=url
             )
         except Exception as e:
             logger.exception(

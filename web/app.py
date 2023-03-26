@@ -17,5 +17,5 @@ api.add_resource(Schedule, "/timers/<int:job_id>", resource_class_kwargs={"db": 
 
 
 if __name__ == "__main__":
-    # Use this in non-prod envs only
+    # Use this in local development only
     app.run(debug=False)

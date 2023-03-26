@@ -25,7 +25,7 @@ class Scheduler(Resource):
 
     def __init__(self, **kwargs) -> None:
         self.db: JobDB = kwargs["db"]
-        self.app = Celery(
+        self.celery_client = Celery(
             "worker",
             broker=BROKER_CONNECTION,
         )
@@ -41,7 +41,11 @@ class Scheduler(Resource):
             job: Job = self.db.create(hours, minutes, seconds, url)
             logger.debug("Sending task to Celery workers")
             logger.debug(f"Task is scheduled for {job.schedule.astimezone()}")
-            self.app.send_task(name="webhook", kwargs={"job_id": job.id, "url": url}, eta=job.schedule.astimezone())
+            self.celery_client.send_task(
+                name="webhook",
+                kwargs={"job_id": job.id, "url": url},
+                eta=job.schedule.astimezone(),
+            )
             return {"id": job.id}
         except db_excpetions.IllegalScheduleError as e:
             abort(IILEAGAL_SCHEDULE_ERROR, description=str(e))
@@ -115,4 +119,4 @@ class Scheduler(Resource):
         hostname = get_hostname(url)
         if hostname in ILLEGAL_DOMAINS or hostname == APP_DOMAIN:
             logger.warning(f"Recieved an illegal URL")
-            abort(DOS_URL_ERROR, description="The given URL is illegal")
+            abort(DOS_URL_ERROR, description="The given URL is not allowed")

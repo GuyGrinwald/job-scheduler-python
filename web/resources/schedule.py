@@ -19,6 +19,7 @@ class Schedule(Resource):
     def get(self, job_id: int):
         try:
             job = self.db.get(job_id)
+            # DB data is stored as utc so it needs converting
             next_execution = (job.schedule - datetime.now(timezone.utc)).total_seconds()
             return {"id": job_id, "time_left": max(0, next_execution)}
         except db_excpetions.JobNotFoundError as e:
